@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"todo_list/internal/model"
 	"todo_list/internal/storage"
+
 	"github.com/spf13/cobra"
-	"fmt"
 )
 
 var addCmd = &cobra.Command{
@@ -16,16 +17,30 @@ var addCmd = &cobra.Command{
 			return
 		}
 
-		tasks, _ := storage.LoadTasks()
+		tasks, err := storage.LoadTasks()
+		if err != nil {
+			fmt.Println("Failed to load tasks:", err)
+			return
+		}
 
-		newTasks := model.Task {
-			ID: len(args)+1,
+		nextID := 1
+		for _, t := range tasks {
+			if t.ID >= nextID {
+				nextID = t.ID + 1
+			}
+		}
+
+		newTasks := model.Task{
+			ID:    nextID,
 			Title: args[0],
-			Done: false,
+			Done:  false,
 		}
 
 		tasks = append(tasks, newTasks)
-		storage.SaveTasks(tasks)
+		if err := storage.SaveTasks(tasks); err != nil {
+			fmt.Println("Failed to save task:", err)
+			return
+		}
 
 		fmt.Println("Task added")
 	},

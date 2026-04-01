@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"strconv"
 	"todo_list/internal/model"
 	"todo_list/internal/storage"
-	"github.com/spf13/cobra"
-	"fmt"
 )
 
 var delCmd = &cobra.Command{
@@ -15,17 +16,37 @@ var delCmd = &cobra.Command{
 			fmt.Println("Enter a valid argument")
 			return
 		}
-
-		var newTasks []model.Task
-		data, _ := storage.LoadTasks()
-
-		for _, v := range data {
-			if fmt.Sprint(v.ID) != args[0] {
-				newTasks = append(newTasks, v)
-			}
+		taskID, err := strconv.Atoi(args[0])
+		if err != nil {
+			fmt.Println("Task ID must be a number")
+			return
 		}
 
-		storage.SaveTasks(newTasks)
+		var newTasks []model.Task
+		data, err := storage.LoadTasks()
+		if err != nil {
+			fmt.Println("Failed to load tasks:", err)
+			return
+		}
+
+		found := false
+
+		for _, v := range data {
+			if v.ID != taskID {
+				newTasks = append(newTasks, v)
+			} else {
+				found = true
+			}
+		}
+		if !found {
+			fmt.Println("Task not found")
+			return
+		}
+
+		if err := storage.SaveTasks(newTasks); err != nil {
+			fmt.Println("Failed to save tasks:", err)
+			return
+		}
 		fmt.Println("Task deleted")
 
 	},
